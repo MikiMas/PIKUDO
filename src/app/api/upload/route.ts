@@ -5,7 +5,7 @@ import { readSessionTokenFromRequest, validateUuid } from "@/lib/validators";
 export const runtime = "nodejs";
 
 const BUCKET = "retos";
-const MAX_BYTES = 500 * 1024 * 1024;
+const MAX_BYTES = 1024 * 1024 * 1024;
 
 type SessionRow = { player_id: string };
 type PlayerChallengeRow = { id: string; player_id: string; block_start: string };

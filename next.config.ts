@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
   experimental: {
     // Needed for large multipart uploads when middleware is enabled.
-    middlewareClientMaxBodySize: "600mb"
+    middlewareClientMaxBodySize: "1100mb"
   },
   webpack: (config, { dev }) => {
     if (dev) {
