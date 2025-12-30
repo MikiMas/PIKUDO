@@ -68,6 +68,7 @@ on conflict (id) do update set admin_password_hash = excluded.admin_password_has
 - Validación de inputs en endpoints (nickname, uuid, etc.).
 - `src/middleware.ts` añade headers básicos en `/api/*` y gestiona CORS (solo permite mismo origen / localhost en dev).
 - `GET /api/leaderboard` tiene rate-limit simple in-memory (1 req/seg por IP). En serverless puede reiniciarse; para producción “seria” usa un store compartido.
+- Subidas grandes: el cliente sube el fichero directamente a Supabase Storage con URL firmada (`/api/upload-url` + PUT + `/api/upload-confirm`) para evitar límites de Vercel.
 
 ## Desarrollo
 

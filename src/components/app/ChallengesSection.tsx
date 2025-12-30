@@ -95,30 +95,58 @@ export function ChallengesSection({
     setError(null);
     setUploadingId(playerChallengeId);
     try {
-      const form = new FormData();
-      form.set("playerChallengeId", playerChallengeId);
-      form.set("file", file);
-
-      const res = await fetchJson<{ ok: true; media: { url: string; mime: string; type: "image" | "video" } }>(
-        "/api/upload",
+      const urlRes = await fetchJson<{ ok: true; upload: { path: string; token: string; signedUrl: string } }>(
+        "/api/upload-url",
         {
           method: "POST",
-          headers: { ...authHeaders },
-          body: form
+          headers: { "content-type": "application/json", ...authHeaders },
+          body: JSON.stringify({ playerChallengeId, mime: file.type })
         }
       );
 
-      if (!res.ok) {
-        if (res.status === 401) {
+      if (!urlRes.ok) {
+        if (urlRes.status === 401) {
           onNeedsAuthReset();
           return;
         }
-        setError(res.error);
+        setError(urlRes.error);
+        return;
+      }
+
+      const put = await fetch(urlRes.data.upload.signedUrl, {
+        method: "PUT",
+        headers: { "content-type": file.type },
+        body: file
+      }).catch(() => null);
+
+      if (!put || !put.ok) {
+        setError("UPLOAD_FAILED");
+        return;
+      }
+
+      const confirmRes = await fetchJson<{ ok: true; media: { url: string; mime: string; type: "image" | "video" } }>(
+        "/api/upload-confirm",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...authHeaders },
+          body: JSON.stringify({ playerChallengeId, path: urlRes.data.upload.path, mime: file.type })
+        }
+      );
+
+      if (!confirmRes.ok) {
+        if (confirmRes.status === 401) {
+          onNeedsAuthReset();
+          return;
+        }
+        setError(confirmRes.error);
         return;
       }
 
       setChallenges((prev) => prev.map((c) => (c.id === playerChallengeId ? { ...c, hasMedia: true } : c)));
-      setMediaPreviewById((m) => ({ ...m, [playerChallengeId]: { url: res.data.media.url, mime: res.data.media.mime } }));
+      setMediaPreviewById((m) => ({
+        ...m,
+        [playerChallengeId]: { url: confirmRes.data.media.url, mime: confirmRes.data.media.mime }
+      }));
     } finally {
       setUploadingId((v) => (v === playerChallengeId ? null : v));
     }
