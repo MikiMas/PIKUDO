@@ -195,16 +195,10 @@ export function ChallengesSection({
             <div style={{ marginTop: 6, color: "var(--muted)", lineHeight: 1.45 }}>{c.description}</div>
 
             <div className="row" style={{ marginTop: 10, justifyContent: "space-between" }}>
-              <label
-                style={{
-                  flex: 1,
-                  display: "grid",
-                  gap: 8
-                }}
-              >
+              <label style={{ flex: 1 }}>
                 <input
                   type="file"
-                  accept="image/*,video/*"
+                  accept="image/*"
                   capture="environment"
                   disabled={c.completed || uploadingId === c.id}
                   onChange={(e) => {
@@ -225,12 +219,45 @@ export function ChallengesSection({
                     border: "1px solid var(--border)",
                     background: "rgba(124, 92, 255, 0.18)",
                     color: "var(--text)",
-                    fontWeight: 800,
+                    fontWeight: 900,
                     cursor: c.completed ? "not-allowed" : "pointer",
                     opacity: c.completed ? 0.6 : 1
                   }}
                 >
-                  {uploadingId === c.id ? "Subiendo..." : c.hasMedia ? "Cambiar foto/vídeo" : "Subir foto/vídeo"}
+                  {uploadingId === c.id ? "Subiendo..." : c.hasMedia ? "Cambiar foto" : "Hacer foto"}
+                </span>
+              </label>
+
+              <label style={{ flex: 1 }}>
+                <input
+                  type="file"
+                  accept="video/*"
+                  capture="environment"
+                  disabled={c.completed || uploadingId === c.id}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    uploadMedia(c.id, f).catch(() => {});
+                    e.currentTarget.value = "";
+                  }}
+                  style={{ display: "none" }}
+                />
+                <span
+                  style={{
+                    width: "100%",
+                    display: "inline-block",
+                    textAlign: "center",
+                    padding: "12px 12px",
+                    borderRadius: 12,
+                    border: "1px solid var(--border)",
+                    background: "rgba(34, 197, 94, 0.16)",
+                    color: "var(--text)",
+                    fontWeight: 900,
+                    cursor: c.completed ? "not-allowed" : "pointer",
+                    opacity: c.completed ? 0.6 : 1
+                  }}
+                >
+                  {uploadingId === c.id ? "Subiendo..." : c.hasMedia ? "Cambiar vídeo" : "Grabar vídeo"}
                 </span>
               </label>
             </div>
