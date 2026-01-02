@@ -30,7 +30,7 @@ export function AppHeader({
     <section className="card" style={{ marginTop: 16 }}>
       <div className="row" style={{ justifyContent: "space-between" }}>
         <div style={{ display: "grid", gap: 4 }}>
-          <div style={{ fontWeight: 800, fontSize: 18 }}>{player ? player.nickname : "CANOO"}</div>
+          <div style={{ fontWeight: 800, fontSize: 18 }}>{player ? player.nickname : "Pikudo"}</div>
           <div style={{ color: "var(--muted)", fontSize: 13 }}>
             {player ? (
               <>
@@ -60,7 +60,7 @@ export function AppHeader({
                 padding: "8px 10px",
                 borderRadius: 12,
                 border: "1px solid var(--border)",
-                background: "rgba(255,255,255,0.06)",
+                background: "var(--field-bg)",
                 color: "var(--text)",
                 fontWeight: 700
               }}

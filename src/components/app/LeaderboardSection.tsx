@@ -75,7 +75,7 @@ export function LeaderboardSection({
             padding: "8px 10px",
             borderRadius: 12,
             border: "1px solid var(--border)",
-            background: "rgba(255,255,255,0.06)",
+            background: "var(--field-bg)",
             color: "var(--text)",
             fontWeight: 700
           }}
@@ -84,7 +84,7 @@ export function LeaderboardSection({
         </button>
       </div>
 
-      {error ? <div style={{ marginTop: 10, color: "#fecaca", fontSize: 14 }}>{error}</div> : null}
+      {error ? <div style={{ marginTop: 10, color: "var(--danger)", fontSize: 14 }}>{error}</div> : null}
 
       <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
         {visible.map((l, idx) => {
@@ -92,12 +92,12 @@ export function LeaderboardSection({
           const isTop3 = rank <= 3;
           const bg =
             rank === 1
-              ? "linear-gradient(135deg, rgba(250,204,21,0.22), rgba(255,255,255,0.04))"
+              ? "linear-gradient(135deg, rgba(250,204,21,0.22), rgba(255,255,255,0.70))"
               : rank === 2
-                ? "linear-gradient(135deg, rgba(148,163,184,0.22), rgba(255,255,255,0.04))"
+                ? "linear-gradient(135deg, rgba(148,163,184,0.22), rgba(255,255,255,0.70))"
                 : rank === 3
-                  ? "linear-gradient(135deg, rgba(245,158,11,0.20), rgba(255,255,255,0.04))"
-                  : "rgba(0,0,0,0.18)";
+                  ? "linear-gradient(135deg, rgba(245,158,11,0.20), rgba(255,255,255,0.70))"
+                  : "var(--field-bg)";
 
           const borderColor =
             rank === 1
@@ -145,7 +145,7 @@ export function LeaderboardSection({
                   style={{
                     fontSize: rank === 1 ? 16 : rank === 2 ? 15 : rank === 3 ? 15 : 14,
                     borderColor: borderColor,
-                    background: "rgba(255,255,255,0.06)"
+                    background: "rgba(255,255,255,0.70)"
                   }}
                 >
                   <strong>{l.points}</strong>

@@ -86,7 +86,7 @@ export function JoinNickname({
             padding: "12px 12px",
             borderRadius: 12,
             border: "1px solid var(--border)",
-            background: "rgba(0,0,0,0.25)",
+            background: "var(--field-bg)",
             color: "var(--text)",
             outline: "none"
           }}
@@ -98,14 +98,14 @@ export function JoinNickname({
             padding: "12px 12px",
             borderRadius: 12,
             border: "1px solid var(--border)",
-            background: "rgba(124, 92, 255, 0.25)",
+            background: "var(--field-bg-strong)",
             color: "var(--text)",
             fontWeight: 800
           }}
         >
           {loading ? "Entrando..." : "Entrar"}
         </button>
-        {error ? <div style={{ color: "#fecaca", fontSize: 14 }}>{error}</div> : null}
+        {error ? <div style={{ color: "var(--danger)", fontSize: 14 }}>{error}</div> : null}
       </form>
     </section>
   );

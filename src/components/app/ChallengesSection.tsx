@@ -178,7 +178,7 @@ export function ChallengesSection({
         </p>
       ) : null}
 
-      {error ? <div style={{ marginTop: 10, color: "#fecaca", fontSize: 14 }}>{error}</div> : null}
+      {error ? <div style={{ marginTop: 10, color: "var(--danger)", fontSize: 14 }}>{error}</div> : null}
 
       <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
         {paused ? null : challenges.map((c) => (
@@ -188,7 +188,7 @@ export function ChallengesSection({
               padding: 12,
               borderRadius: 12,
               border: "1px solid var(--border)",
-              background: c.completed ? "rgba(34, 197, 94, 0.12)" : "rgba(0,0,0,0.18)"
+              background: c.completed ? "var(--success-bg)" : "var(--field-bg)"
             }}
           >
             <div style={{ fontWeight: 800 }}>{c.title}</div>
@@ -216,7 +216,7 @@ export function ChallengesSection({
                     padding: "12px 12px",
                     borderRadius: 12,
                     border: "1px solid var(--border)",
-                    background: "rgba(124, 92, 255, 0.18)",
+                    background: "var(--field-bg-strong)",
                     color: "var(--text)",
                     fontWeight: 900,
                     cursor: c.completed ? "not-allowed" : "pointer",
@@ -248,7 +248,7 @@ export function ChallengesSection({
                     padding: "12px 12px",
                     borderRadius: 12,
                     border: "1px solid var(--border)",
-                    background: "rgba(34, 197, 94, 0.16)",
+                    background: "var(--success-bg)",
                     color: "var(--text)",
                     fontWeight: 900,
                     cursor: c.completed ? "not-allowed" : "pointer",
@@ -288,8 +288,7 @@ export function ChallengesSection({
                 padding: "12px 12px",
                 borderRadius: 12,
                 border: "1px solid var(--border)",
-                background:
-                  c.completed || !c.hasMedia ? "rgba(255,255,255,0.06)" : "rgba(34, 197, 94, 0.18)",
+                background: c.completed || !c.hasMedia ? "var(--field-bg)" : "var(--success-bg)",
                 color: "var(--text)",
                 fontWeight: 800,
                 opacity: c.completed || !c.hasMedia ? 0.7 : 1

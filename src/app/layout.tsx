@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-const appName = process.env.NEXT_PUBLIC_APP_NAME ?? "CANOO";
-const heroTitle = "CANO 2026";
+const appName = process.env.NEXT_PUBLIC_APP_NAME ?? "Pikudo";
+const heroTitle = "Pikudo";
 
 export const metadata: Metadata = {
   title: appName,
@@ -14,11 +14,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" suppressHydrationWarning>
       <body suppressHydrationWarning>
         <div className="container">
-          <header className="header">
-            <div className="brand brandHero" aria-label={appName}>
-              {heroTitle}
-            </div>
-          </header>
           <main>{children}</main>
           <footer className="footer">
             © {new Date().getFullYear()} {appName}

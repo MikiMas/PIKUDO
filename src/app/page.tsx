@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 
 async function fetchJson<T>(
   input: RequestInfo | URL,
@@ -24,7 +25,7 @@ export default function LandingPage() {
 
   const placeholderName = useMemo(() => {
     const d = new Date();
-    return `CANO ${d.getFullYear()}`;
+    return `Pikudo ${d.getFullYear()}`;
   }, []);
 
   async function onContinue() {
@@ -68,6 +69,28 @@ export default function LandingPage() {
 
   return (
     <>
+      <section className="card coverCard">
+        <div className="coverTitle">
+          <div className="brandHero" style={{ fontSize: 26 }}>
+            Pikudo
+          </div>
+          <div style={{ marginTop: 6, color: "var(--muted)", lineHeight: 1.4, fontWeight: 700 }}>
+            Crea una sala, invita y comparte las fotos.
+          </div>
+        </div>
+
+        <div className="coverMedia" aria-hidden="true">
+          <Image
+            src="/foto_portada.png"
+            alt=""
+            fill
+            priority
+            sizes="(max-width: 920px) 100vw, 920px"
+            style={{ objectFit: "contain" }}
+          />
+        </div>
+      </section>
+
       <section className="card">
         <h1 style={{ margin: 0, fontSize: 22 }}>Crear sala</h1>
         <p style={{ margin: "8px 0 0", color: "var(--muted)", lineHeight: 1.5 }}>
@@ -100,7 +123,7 @@ export default function LandingPage() {
             padding: "12px 12px",
             borderRadius: 12,
             border: "1px solid var(--border)",
-            background: "rgba(0,0,0,0.25)",
+            background: "var(--field-bg)",
             color: "var(--text)",
             outline: "none"
           }}
@@ -123,7 +146,7 @@ export default function LandingPage() {
             padding: "12px 12px",
             borderRadius: 12,
             border: "1px solid var(--border)",
-            background: "rgba(0,0,0,0.25)",
+            background: "var(--field-bg)",
             color: "var(--text)",
             outline: "none",
             fontWeight: 900
@@ -138,7 +161,7 @@ export default function LandingPage() {
             padding: "12px 12px",
             borderRadius: 12,
             border: "1px solid var(--border)",
-            background: "rgba(124, 92, 255, 0.25)",
+            background: "var(--field-bg-strong)",
             color: "var(--text)",
             fontWeight: 900
           }}

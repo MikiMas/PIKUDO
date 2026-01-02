@@ -256,23 +256,23 @@ export default function AdminPage() {
           <section className="card">
             <div className="row" style={{ justifyContent: "space-between" }}>
               <div style={{ fontWeight: 900, fontSize: 18 }}>{selectedPlayer?.nickname}</div>
-              <button
-                onClick={() => {
-                  setSelectedId(null);
-                  setSelectedPlayer(null);
-                  setCompleted([]);
-                }}
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                  border: "1px solid var(--border)",
-                  background: "rgba(255,255,255,0.06)",
-                  color: "var(--text)",
-                  fontWeight: 800
-                }}
-              >
-                Volver
-              </button>
+                <button
+                  onClick={() => {
+                    setSelectedId(null);
+                    setSelectedPlayer(null);
+                    setCompleted([]);
+                  }}
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: 12,
+                    border: "1px solid var(--border)",
+                    background: "var(--field-bg)",
+                    color: "var(--text)",
+                    fontWeight: 800
+                  }}
+                >
+                  Volver
+                </button>
             </div>
             <div className="row" style={{ marginTop: 10 }}>
               <span className="pill">
@@ -297,7 +297,7 @@ export default function AdminPage() {
                     padding: 12,
                     borderRadius: 12,
                     border: "1px solid var(--border)",
-                    background: "rgba(0,0,0,0.18)"
+                    background: "var(--field-bg)"
                   }}
                 >
                   <div className="row" style={{ justifyContent: "space-between" }}>
@@ -359,4 +359,3 @@ export default function AdminPage() {
     </>
   );
 }
-
