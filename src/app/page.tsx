@@ -83,10 +83,11 @@ export default function LandingPage() {
           <Image
             src="/foto_portada.png"
             alt=""
-            fill
+            width={1248}
+            height={542}
             priority
             sizes="(max-width: 920px) 100vw, 920px"
-            style={{ objectFit: "contain" }}
+            style={{ width: "100%", height: "auto" }}
           />
         </div>
       </section>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { InfoHelp } from "@/components/app/InfoHelp";
 
 const appName = process.env.NEXT_PUBLIC_APP_NAME ?? "Pikudo";
 const heroTitle = "Pikudo";
@@ -14,6 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" suppressHydrationWarning>
       <body suppressHydrationWarning>
         <div className="container">
+          <InfoHelp />
           <main>{children}</main>
           <footer className="footer">
             © {new Date().getFullYear()} {appName}

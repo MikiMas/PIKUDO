@@ -167,7 +167,7 @@ a {
 
 .coverMedia {
   position: relative;
-  height: 320px;
+  padding: 10px 12px 14px;
   background: rgba(244, 247, 245, 0.04);
 }
 
@@ -179,7 +179,7 @@ a {
 
 @media (min-width: 640px) {
   .coverMedia {
-    height: 420px;
+    padding: 12px 14px 16px;
   }
 }
 
@@ -271,4 +271,156 @@ button {
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.infoFab {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
+  right: calc(12px + env(safe-area-inset-right));
+  z-index: 100;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(8, 22, 17, 0.75);
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  place-items: center;
+}
+
+.infoFabIcon {
+  width: 20px;
+  height: 20px;
+  color: var(--text);
+}
+
+.infoModal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+}
+
+.infoBackdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.infoPanel {
+  position: relative;
+  width: min(520px, 100%);
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: rgba(8, 22, 17, 0.92);
+  box-shadow: var(--shadow);
+  padding: 14px;
+}
+
+.infoTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.infoBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(244, 247, 245, 0.06);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.infoClose {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(244, 247, 245, 0.06);
+  font-weight: 800;
+}
+
+.infoSlide {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: rgba(244, 247, 245, 0.04);
+}
+
+.infoIconWrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(244, 247, 245, 0.12);
+  background: rgba(167, 243, 208, 0.12);
+}
+
+.infoIcon {
+  width: 26px;
+  height: 26px;
+  color: rgba(244, 247, 245, 0.92);
+}
+
+.infoTitle {
+  font-weight: 900;
+  font-size: 18px;
+}
+
+.infoBody {
+  margin-top: 6px;
+  color: var(--muted);
+  line-height: 1.45;
+  font-size: 14px;
+}
+
+.infoDots {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.infoDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(244, 247, 245, 0.22);
+}
+
+.infoDotActive {
+  width: 18px;
+  background: rgba(167, 243, 208, 0.75);
+}
+
+.infoNav {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.infoNav button {
+  padding: 12px 12px;
+  border-radius: 12px;
+  font-weight: 900;
+  background: rgba(244, 247, 245, 0.06);
+}
+
+.infoNav button:last-child {
+  background: rgba(167, 243, 208, 0.16);
+  border-color: rgba(167, 243, 208, 0.30);
 }
