@@ -36,7 +36,7 @@ export async function GET(req: Request) {
 
   const { data: settings } = await supabase
     .from("room_settings")
-    .select("game_status")
+    .select("game_status,game_started_at")
     .eq("room_id", roomId)
     .maybeSingle<{ game_status: string; game_started_at: string | null }>();
 
