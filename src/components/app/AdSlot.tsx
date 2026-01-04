@@ -12,11 +12,13 @@ export function AdSlot({
   slot,
   format = "auto",
   fullWidthResponsive = true,
+  minHeight = 90,
   className
 }: {
   slot: string;
   format?: string;
   fullWidthResponsive?: boolean;
+  minHeight?: number;
   className?: string;
 }) {
   const client = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID ?? "";
@@ -33,7 +35,7 @@ export function AdSlot({
   if (!enabled) return null;
 
   return (
-    <div className={className} style={{ minHeight: 90, width: "100%" }}>
+    <div className={className} style={{ minHeight, width: "100%" }}>
       <ins
         className="adsbygoogle"
         style={{ display: "block" }}
@@ -45,4 +47,3 @@ export function AdSlot({
     </div>
   );
 }
-

@@ -137,8 +137,6 @@ export default function LandingPage() {
           {loading ? "..." : "Crear sala"}
         </button>
       </section>
-
-      <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME ?? ""} className="card" />
     </>
   );
 }
