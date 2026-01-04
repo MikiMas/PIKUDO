@@ -6,7 +6,6 @@ import { AdSlot } from "@/components/app/AdSlot";
 
 const appName = process.env.NEXT_PUBLIC_APP_NAME ?? "Pikudo";
 const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID ?? "";
-const adsenseSidebarSlot = process.env.NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR ?? "";
 const adsenseMobileBottomSlot = process.env.NEXT_PUBLIC_ADSENSE_SLOT_MOBILE_BOTTOM ?? "";
 
 export const metadata: Metadata = {
@@ -28,21 +27,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ) : null}
       </head>
       <body suppressHydrationWarning>
-        <div className="appShell">
-          <aside className="adSidebar" aria-label="Publicidad">
-            <AdSlot slot={adsenseSidebarSlot} format="auto" fullWidthResponsive={false} minHeight={600} />
-          </aside>
-
-          <div className="container">
-            <InfoHelp />
-            <main>{children}</main>
-            <div className="adMobileBottom" aria-label="Publicidad">
-              <AdSlot slot={adsenseMobileBottomSlot} className="card" />
-            </div>
-            <footer className="footer">
-              ЖИ {new Date().getFullYear()} {appName}
-            </footer>
+        <div className="container">
+          <InfoHelp />
+          <main>{children}</main>
+          <div className="adBelow" aria-label="Publicidad">
+            <AdSlot slot={adsenseMobileBottomSlot} className="card" />
           </div>
+          <footer className="footer">
+            ЖИ {new Date().getFullYear()} {appName}
+          </footer>
         </div>
       </body>
     </html>

@@ -79,17 +79,7 @@ a {
   padding: clamp(14px, 3.5vw, 24px);
   position: relative;
 }
-
-.appShell {
-  width: 100%;
-  margin: 0 auto;
-}
-
-.adSidebar {
-  display: none;
-}
-
-.adMobileBottom {
+.adBelow {
   margin-top: 16px;
 }
 
@@ -237,25 +227,6 @@ a {
 }
 
 @media (min-width: 1024px) {
-  .appShell {
-    max-width: 980px;
-    display: grid;
-    grid-template-columns: 180px minmax(0, 1fr);
-    gap: 18px;
-    align-items: start;
-    padding: 22px 12px;
-  }
-
-  .adSidebar {
-    display: block;
-    position: sticky;
-    top: 16px;
-  }
-
-  .adMobileBottom {
-    display: none;
-  }
-
   .container {
     max-width: 620px;
     padding: 22px;
