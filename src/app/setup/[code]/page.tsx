@@ -29,12 +29,11 @@ export default function SetupRoomPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [shareNotSupported, setShareNotSupported] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [inviter, setInviter] = useState<string>("");
   const [ready, setReady] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [rounds, setRounds] = useState(4);
-  const [savingRounds, setSavingRounds] = useState(false);
 
   const inviteLink = useMemo(() => {
     if (!code) return "";
@@ -146,47 +145,74 @@ export default function SetupRoomPage() {
     await copyInvite();
   }
 
-  async function saveRoomName() {
-    setSaving(true);
+  async function startGame() {
+    if (!isOwner) return;
+    if (!code) return;
+
+    setStarting(true);
     setError(null);
     try {
       const name = roomName.trim();
-      const res = await fetchJson<{ ok: true; room: { code: string; name: string } }>("/api/rooms/rename", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ code, name })
-      });
-      if (!res.ok) {
-        setError(res.error);
-        return;
+      if (name) {
+        const rename = await fetchJson<{ ok: true; room: { code: string; name: string } }>("/api/rooms/rename", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ code, name })
+        });
+        if (!rename.ok) {
+          setError(rename.error);
+          return;
+        }
       }
 
-      try {
-        localStorage.setItem("draft.roomName", name);
-      } catch {}
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function saveRounds() {
-    setSavingRounds(true);
-    setError(null);
-    try {
-      const res = await fetchJson<{ ok: true; room: { code: string; rounds: number } }>("/api/rooms/rounds", {
+      const roundsRes = await fetchJson<{ ok: true; room: { code: string; rounds: number } }>("/api/rooms/rounds", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ code, rounds })
       });
+      if (!roundsRes.ok && roundsRes.status !== 409) {
+        setError(roundsRes.error);
+        return;
+      }
+
+      const startRes = await fetchJson<{ ok: true; startsAt: string; endsAt: string }>("/api/rooms/start", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code })
+      });
+      if (!startRes.ok && startRes.status !== 409) {
+        setError(startRes.error);
+        return;
+      }
+
+      window.location.href = `/room/${encodeURIComponent(code)}`;
+    } finally {
+      setStarting(false);
+    }
+  }
+
+  async function closeRoom() {
+    if (!isOwner) return;
+    if (!code) return;
+
+    const ok = typeof window !== "undefined" ? window.confirm("¿Cerrar la sala y borrar todo?") : false;
+    if (!ok) return;
+
+    setStarting(true);
+    setError(null);
+    try {
+      const res = await fetchJson<{ ok: true }>("/api/rooms/close", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code })
+      });
       if (!res.ok) {
         setError(res.error);
         return;
       }
-      try {
-        localStorage.setItem("draft.rounds", String(rounds));
-      } catch {}
+      window.location.href = "/";
     } finally {
-      setSavingRounds(false);
+      setStarting(false);
     }
   }
 
@@ -202,7 +228,7 @@ export default function SetupRoomPage() {
       <section className="card">
         <h1 style={{ margin: 0, fontSize: 22 }}>Configurar sala</h1>
         <p style={{ margin: "8px 0 0", color: "var(--muted)", lineHeight: 1.5 }}>
-          Ponle un nombre, comparte el enlace y entra a la sala cuando estéis listos.
+          {isOwner ? "Ajusta el nombre y la duración y luego empieza la partida." : "Espera a que el admin configure y empiece la partida."}
         </p>
       </section>
 
@@ -220,7 +246,7 @@ export default function SetupRoomPage() {
           value={roomName}
           onChange={(e) => setRoomName(e.target.value)}
           placeholder={`PIKUDO ${new Date().getFullYear()}`}
-          disabled={saving}
+          disabled={!isOwner || starting}
           style={{
             marginTop: 10,
             width: "100%",
@@ -233,26 +259,10 @@ export default function SetupRoomPage() {
             fontWeight: 900
           }}
         />
-        <div className="row" style={{ marginTop: 10, justifyContent: "space-between", alignItems: "stretch" }}>
-          <span className="pill" style={{ flex: 1, justifyContent: "space-between" }}>
+        <div className="row" style={{ marginTop: 10 }}>
+          <span className="pill" style={{ width: "100%", justifyContent: "space-between" }}>
             <strong>Código</strong> {code || ""}
           </span>
-          <button
-            onClick={saveRoomName}
-            disabled={saving || !roomName.trim()}
-            style={{
-              padding: "10px 12px",
-              borderRadius: 12,
-              border: "1px solid var(--border)",
-              background: "var(--field-bg-strong)",
-              color: "var(--text)",
-              fontWeight: 900,
-              opacity: saving || !roomName.trim() ? 0.7 : 1,
-              whiteSpace: "nowrap"
-            }}
-          >
-            {saving ? "Guardando..." : "Guardar nombre"}
-          </button>
         </div>
       </section>
 
@@ -270,7 +280,7 @@ export default function SetupRoomPage() {
               <select
                 value={rounds}
                 onChange={(e) => setRounds(Number(e.target.value))}
-                disabled={savingRounds}
+                disabled={starting}
                 style={{
                   padding: "10px 12px",
                   borderRadius: 12,
@@ -288,8 +298,8 @@ export default function SetupRoomPage() {
               </select>
             </div>
             <button
-              onClick={saveRounds}
-              disabled={savingRounds}
+              onClick={startGame}
+              disabled={starting}
               style={{
                 padding: "12px 12px",
                 borderRadius: 12,
@@ -297,10 +307,25 @@ export default function SetupRoomPage() {
                 background: "var(--field-bg-strong)",
                 color: "var(--text)",
                 fontWeight: 900,
-                opacity: savingRounds ? 0.7 : 1
+                opacity: starting ? 0.7 : 1
               }}
             >
-              {savingRounds ? "Guardando..." : "Guardar duración"}
+              {starting ? "Empezando..." : "Empezar partida"}
+            </button>
+            <button
+              onClick={closeRoom}
+              disabled={starting}
+              style={{
+                padding: "12px 12px",
+                borderRadius: 12,
+                border: "1px solid rgba(255, 59, 59, 0.35)",
+                background: "rgba(255, 59, 59, 0.12)",
+                color: "var(--text)",
+                fontWeight: 900,
+                opacity: starting ? 0.7 : 1
+              }}
+            >
+              Cerrar sala (borrar todo)
             </button>
           </div>
         </section>
@@ -339,21 +364,23 @@ export default function SetupRoomPage() {
           >
             Copiar enlace
           </button>
-          <button
-            onClick={() => {
-              window.location.href = `/room/${code}`;
-            }}
-            style={{
-              padding: "12px 12px",
-              borderRadius: 12,
-              border: "1px solid var(--border)",
-              background: "rgba(244, 247, 245, 0.06)",
-              color: "var(--text)",
-              fontWeight: 900
-            }}
-          >
-            Entrar a la sala
-          </button>
+          {!isOwner ? (
+            <button
+              onClick={() => {
+                window.location.href = `/room/${code}`;
+              }}
+              style={{
+                padding: "12px 12px",
+                borderRadius: 12,
+                border: "1px solid var(--border)",
+                background: "rgba(244, 247, 245, 0.06)",
+                color: "var(--text)",
+                fontWeight: 900
+              }}
+            >
+              Entrar a la sala
+            </button>
+          ) : null}
         </div>
       </section>
 
