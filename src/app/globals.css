@@ -310,6 +310,27 @@ button:disabled {
   place-items: center;
 }
 
+.exitFab {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
+  left: calc(12px + env(safe-area-inset-left));
+  z-index: 100;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(8, 22, 17, 0.75);
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  place-items: center;
+}
+
+.exitFabIcon {
+  width: 18px;
+  height: 18px;
+  color: var(--text);
+}
+
 .infoFabIcon {
   width: 20px;
   height: 20px;

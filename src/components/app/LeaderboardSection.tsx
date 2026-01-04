@@ -145,10 +145,11 @@ export function LeaderboardSection({
                   style={{
                     fontSize: rank === 1 ? 16 : rank === 2 ? 15 : rank === 3 ? 15 : 14,
                     borderColor: borderColor,
-                    background: "rgba(255,255,255,0.70)"
+                    background: "rgba(8, 22, 17, 0.65)",
+                    color: "rgba(244, 247, 245, 0.92)"
                   }}
                 >
-                  <strong>{l.points}</strong>
+                  <strong style={{ color: "var(--accent)" }}>{l.points}</strong>
                 </div>
               </div>
             </div>

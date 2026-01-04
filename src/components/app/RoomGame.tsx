@@ -6,6 +6,7 @@ import { JoinNickname } from "@/components/app/JoinNickname";
 import { ChallengesSection } from "@/components/app/ChallengesSection";
 import { LeaderboardSection } from "@/components/app/LeaderboardSection";
 import { LoadingScreen } from "@/components/app/LoadingScreen";
+import { AdSlot } from "@/components/app/AdSlot";
 
 type Player = { id: string; nickname: string; points: number; room_id?: string };
 type RoomPlayer = { id: string; nickname: string; points: number };
@@ -61,9 +62,10 @@ export function RoomGame({ roomCode }: { roomCode: string }) {
   const [booting, setBooting] = useState(true);
   const [isOwner, setIsOwner] = useState(false);
   const [roomPlayers, setRoomPlayers] = useState<RoomPlayer[]>([]);
-  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
-  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
-  const [showTransferConfirm, setShowTransferConfirm] = useState(false);
+  const [showExitModal, setShowExitModal] = useState(false);
+  const [exitStep, setExitStep] = useState<
+    "menu" | "confirm_close" | "confirm_leave" | "confirm_transfer" | "confirm_end"
+  >("menu");
   const [roomName, setRoomName] = useState<string>("");
   const [ownerNickname, setOwnerNickname] = useState<string>("");
 
@@ -231,7 +233,8 @@ export function RoomGame({ roomCode }: { roomCode: string }) {
       return;
     }
 
-    setShowLeaveConfirm(false);
+    setShowExitModal(false);
+    setExitStep("menu");
     onNeedsAuthReset();
     window.location.href = "/";
   }, [authHeaders, onNeedsAuthReset]);
@@ -248,8 +251,8 @@ export function RoomGame({ roomCode }: { roomCode: string }) {
       return;
     }
 
-    setShowCloseConfirm(false);
-    setShowLeaveConfirm(false);
+    setShowExitModal(false);
+    setExitStep("menu");
     onNeedsAuthReset();
     window.location.href = "/";
   }, [authHeaders, onNeedsAuthReset, roomCode]);
@@ -265,17 +268,211 @@ export function RoomGame({ roomCode }: { roomCode: string }) {
       return;
     }
 
-    setShowTransferConfirm(false);
+    setShowExitModal(false);
+    setExitStep("menu");
     onNeedsAuthReset();
     window.location.href = "/";
   }, [authHeaders, onNeedsAuthReset]);
 
+  const endGame = useCallback(async () => {
+    setError(null);
+    const res = await fetchJson<{ ok: true; endedAt: string }>("/api/rooms/end", {
+      method: "POST",
+      headers: { "content-type": "application/json", ...authHeaders },
+      body: JSON.stringify({ code: roomCode })
+    });
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+
+    setShowExitModal(false);
+    setExitStep("menu");
+    refreshChallenges().catch(() => {});
+  }, [authHeaders, refreshChallenges, roomCode]);
+
   const showPausedCard = paused && state !== "scheduled";
+  const showLeaveConfirm = false;
+  const showCloseConfirm = false;
+  const showTransferConfirm = false;
 
   if (booting) return <LoadingScreen title="Cargando sala…" />;
 
   return (
     <>
+      {player ? (
+        <>
+          <button className="exitFab" type="button" onClick={() => setShowExitModal(true)} aria-label="Salir">
+            <svg className="exitFabIcon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M18.3 5.7a1 1 0 0 1 0 1.4L13.4 12l4.9 4.9a1 1 0 1 1-1.4 1.4L12 13.4l-4.9 4.9a1 1 0 1 1-1.4-1.4l4.9-4.9-4.9-4.9a1 1 0 0 1 1.4-1.4l4.9 4.9l4.9-4.9a1 1 0 0 1 1.4 0Z"
+              />
+            </svg>
+          </button>
+
+          {showExitModal ? (
+            <div className="infoModal" role="dialog" aria-modal="true" aria-label="Salir">
+              <button
+                className="infoBackdrop"
+                type="button"
+                onClick={() => {
+                  setShowExitModal(false);
+                  setExitStep("menu");
+                }}
+                aria-label="Cerrar"
+              />
+              <div className="infoPanel">
+                <div className="infoTop">
+                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <span className="infoBadge">Salir</span>
+                    <span style={{ color: "var(--muted)", fontSize: 13 }}>{roomName || `Sala ${roomCode}`}</span>
+                  </div>
+                  <button
+                    className="infoClose"
+                    type="button"
+                    onClick={() => {
+                      setShowExitModal(false);
+                      setExitStep("menu");
+                    }}
+                  >
+                    Cerrar
+                  </button>
+                </div>
+
+                {exitStep === "menu" ? (
+                  <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                    {isOwner && state !== "scheduled" && state !== "ended" ? (
+                      <button
+                        type="button"
+                        onClick={() => setExitStep("confirm_end")}
+                        style={{
+                          padding: "12px 12px",
+                          borderRadius: 12,
+                          border: "1px solid var(--border)",
+                          background: "rgba(244, 247, 245, 0.06)",
+                          color: "var(--text)",
+                          fontWeight: 900
+                        }}
+                      >
+                        Finalizar partida
+                      </button>
+                    ) : null}
+
+                    {isOwner ? (
+                      <button
+                        type="button"
+                        onClick={() => setExitStep("confirm_close")}
+                        style={{
+                          padding: "12px 12px",
+                          borderRadius: 12,
+                          border: "1px solid rgba(254, 202, 202, 0.35)",
+                          background: "rgba(239, 68, 68, 0.12)",
+                          color: "var(--text)",
+                          fontWeight: 900
+                        }}
+                      >
+                        Cerrar sala (borrar todo)
+                      </button>
+                    ) : null}
+
+                    {isOwner && state !== "scheduled" ? (
+                      <button
+                        type="button"
+                        onClick={() => setExitStep("confirm_transfer")}
+                        style={{
+                          padding: "12px 12px",
+                          borderRadius: 12,
+                          border: "1px solid rgba(254, 202, 202, 0.35)",
+                          background: "rgba(239, 68, 68, 0.10)",
+                          color: "var(--text)",
+                          fontWeight: 900
+                        }}
+                      >
+                        Abandonar (transferir liderazgo)
+                      </button>
+                    ) : null}
+
+                    {!isOwner ? (
+                      <button
+                        type="button"
+                        onClick={() => setExitStep("confirm_leave")}
+                        style={{
+                          padding: "12px 12px",
+                          borderRadius: 12,
+                          border: "1px solid rgba(254, 202, 202, 0.35)",
+                          background: "rgba(239, 68, 68, 0.10)",
+                          color: "var(--text)",
+                          fontWeight: 900
+                        }}
+                      >
+                        Abandonar (borrar mis datos)
+                      </button>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ fontWeight: 900, fontSize: 18 }}>
+                      {exitStep === "confirm_close"
+                        ? "¿Cerrar la sala?"
+                        : exitStep === "confirm_end"
+                          ? "¿Finalizar la partida?"
+                        : exitStep === "confirm_transfer"
+                          ? "¿Abandonar y transferir liderazgo?"
+                          : "¿Abandonar la partida?"}
+                    </div>
+                    <div style={{ marginTop: 8, color: "var(--muted)", lineHeight: 1.5 }}>
+                      {exitStep === "confirm_close"
+                        ? "Esto borrará toda la información de todos los jugadores (sesiones, retos y media) y eliminará la sala."
+                        : exitStep === "confirm_end"
+                          ? "Se marcará la partida como finalizada y el ranking se quedará tal cual."
+                        : exitStep === "confirm_transfer"
+                          ? "Saldrás de la sala y se borrarán tus datos. El siguiente jugador pasará a ser el líder."
+                          : "Se borrarán tus datos: sesión, retos asignados y media subida."}
+                    </div>
+                    <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (exitStep === "confirm_close") closeRoom();
+                          else if (exitStep === "confirm_end") endGame();
+                          else if (exitStep === "confirm_transfer") transferAndLeaveRoom();
+                          else leaveRoom();
+                        }}
+                        style={{
+                          padding: "12px 12px",
+                          borderRadius: 12,
+                          border: "1px solid rgba(254, 202, 202, 0.35)",
+                          background: "rgba(239, 68, 68, 0.16)",
+                          color: "var(--text)",
+                          fontWeight: 900
+                        }}
+                      >
+                        Sí, continuar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setExitStep("menu")}
+                        style={{
+                          padding: "12px 12px",
+                          borderRadius: 12,
+                          border: "1px solid var(--border)",
+                          background: "rgba(255,255,255,0.06)",
+                          color: "var(--text)",
+                          fontWeight: 900
+                        }}
+                      >
+                        Volver
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
+        </>
+      ) : null}
+
       <AppHeader
         player={player ? { nickname: player.nickname, points: player.points } : null}
         nextBlockInSec={nextBlockInSec}
@@ -324,7 +521,7 @@ export function RoomGame({ roomCode }: { roomCode: string }) {
                   Sí, abandonar
                 </button>
                 <button
-                  onClick={() => setShowLeaveConfirm(false)}
+                  onClick={() => setExitStep("menu")}
                   style={{
                     width: "100%",
                     padding: "12px 12px",
@@ -363,7 +560,7 @@ export function RoomGame({ roomCode }: { roomCode: string }) {
                   Sí, cerrar sala
                 </button>
                 <button
-                  onClick={() => setShowCloseConfirm(false)}
+                  onClick={() => setExitStep("menu")}
                   style={{
                     width: "100%",
                     padding: "12px 12px",
@@ -402,7 +599,7 @@ export function RoomGame({ roomCode }: { roomCode: string }) {
                   Sí, abandonar
                 </button>
                 <button
-                  onClick={() => setShowTransferConfirm(false)}
+                  onClick={() => setExitStep("menu")}
                   style={{
                     width: "100%",
                     padding: "12px 12px",
@@ -419,60 +616,7 @@ export function RoomGame({ roomCode }: { roomCode: string }) {
             </section>
           ) : null}
 
-          {state !== "scheduled" ? (
-            <section className="card">
-              <h2 style={{ margin: 0, fontSize: 18 }}>Opciones</h2>
-              <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-                {isOwner ? (
-                  <button
-                    onClick={() => setShowCloseConfirm(true)}
-                    style={{
-                      width: "100%",
-                      padding: "12px 12px",
-                      borderRadius: 12,
-                      border: "1px solid rgba(254, 202, 202, 0.35)",
-                      background: "rgba(239, 68, 68, 0.12)",
-                      color: "var(--text)",
-                      fontWeight: 900
-                    }}
-                  >
-                    Cerrar sala (borrar todo)
-                  </button>
-                ) : null}
-                {isOwner ? (
-                  <button
-                    onClick={() => setShowTransferConfirm(true)}
-                    style={{
-                      width: "100%",
-                      padding: "12px 12px",
-                      borderRadius: 12,
-                      border: "1px solid rgba(254, 202, 202, 0.35)",
-                      background: "rgba(239, 68, 68, 0.10)",
-                      color: "var(--text)",
-                      fontWeight: 900
-                    }}
-                  >
-                    Abandonar (transferir liderazgo)
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setShowLeaveConfirm(true)}
-                    style={{
-                      width: "100%",
-                      padding: "12px 12px",
-                      borderRadius: 12,
-                      border: "1px solid rgba(254, 202, 202, 0.35)",
-                      background: "rgba(239, 68, 68, 0.10)",
-                      color: "var(--text)",
-                      fontWeight: 900
-                    }}
-                  >
-                    Abandonar (borrar mis datos)
-                  </button>
-                )}
-              </div>
-            </section>
-          ) : null}
+          {state !== "scheduled" ? null : null}
           {state === "scheduled" ? (
             <section className="card">
               <h2 style={{ margin: 0, fontSize: 18 }}>{isOwner ? "Aún no empieza" : roomName || `Sala ${roomCode}`}</h2>
@@ -528,7 +672,10 @@ export function RoomGame({ roomCode }: { roomCode: string }) {
                     Empezar ahora
                   </button>
                   <button
-                    onClick={() => setShowCloseConfirm(true)}
+                    onClick={() => {
+                      setShowExitModal(true);
+                      setExitStep("confirm_close");
+                    }}
                     style={{
                       width: "100%",
                       padding: "12px 12px",
@@ -545,7 +692,10 @@ export function RoomGame({ roomCode }: { roomCode: string }) {
               ) : null}
               {!isOwner ? (
                 <button
-                  onClick={() => setShowLeaveConfirm(true)}
+                  onClick={() => {
+                    setShowExitModal(true);
+                    setExitStep("confirm_leave");
+                  }}
                   style={{
                     marginTop: 10,
                     width: "100%",
@@ -596,6 +746,8 @@ export function RoomGame({ roomCode }: { roomCode: string }) {
                 onNeedsAuthReset={onNeedsAuthReset}
                 refreshSignal={`${player.points}:${blockStart ?? ""}`}
               />
+
+              <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_ROOM ?? ""} className="card" />
             </>
           ) : null}
         </>

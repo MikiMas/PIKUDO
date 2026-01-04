@@ -21,7 +21,7 @@ function parseRounds(input: unknown): number | null {
   const n = typeof input === "number" ? input : typeof input === "string" ? Number(input) : NaN;
   if (!Number.isFinite(n)) return null;
   const i = Math.floor(n);
-  if (i < 1 || i > 9) return null;
+  if (i < 1 || i > 10) return null;
   return i;
 }
 

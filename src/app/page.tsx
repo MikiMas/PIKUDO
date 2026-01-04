@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { AdSlot } from "@/components/app/AdSlot";
 
 async function fetchJson<T>(
   input: RequestInfo | URL,
@@ -136,7 +137,8 @@ export default function LandingPage() {
           {loading ? "..." : "Crear sala"}
         </button>
       </section>
+
+      <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME ?? ""} className="card" />
     </>
   );
 }
-

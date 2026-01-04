@@ -34,19 +34,27 @@ export async function GET(req: Request) {
     .maybeSingle<{ id: string; starts_at: string; ends_at: string; status: string }>();
   if (roomError || !room) return NextResponse.json({ ok: false, error: roomError?.message ?? "ROOM_NOT_FOUND" }, { status: 500 });
 
+  const roomStatus = String((room as any)?.status ?? "").toLowerCase();
+  if (roomStatus === "ended") {
+    return NextResponse.json({ paused: true, state: "ended", blockStart: now.toISOString(), nextBlockInSec: 0 });
+  }
+
   const { data: settings } = await supabase
     .from("room_settings")
     .select("game_status,game_started_at")
     .eq("room_id", roomId)
     .maybeSingle<{ game_status: string; game_started_at: string | null }>();
 
-  const startedAtIso = (settings as any)?.game_started_at as string | null;
-  if (!startedAtIso) {
+  const startedAtIso = ((settings as any)?.game_started_at as string | null) ?? null;
+  const startedAtFallback = roomStatus === "running" ? ((room as any)?.starts_at as string | null) ?? null : null;
+  const effectiveStartedAtIso = startedAtIso ?? startedAtFallback;
+
+  if (!effectiveStartedAtIso) {
     return NextResponse.json({ paused: true, state: "scheduled", blockStart: new Date().toISOString(), nextBlockInSec: 0 });
   }
 
-  const startedAt = new Date(startedAtIso);
-  const rounds = Math.min(9, Math.max(1, Math.floor((room as any).rounds ?? 1)));
+  const startedAt = new Date(effectiveStartedAtIso);
+  const rounds = Math.min(10, Math.max(1, Math.floor((room as any).rounds ?? 1)));
   const endsAt = new Date(startedAt.getTime() + rounds * 30 * 60 * 1000);
   if (now.getTime() >= endsAt.getTime()) {
     return NextResponse.json({ paused: true, state: "ended", blockStart: endsAt.toISOString(), nextBlockInSec: 0 });

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { LoadingScreen } from "@/components/app/LoadingScreen";
+import { AdSlot } from "@/components/app/AdSlot";
 
 async function fetchJson<T>(
   input: RequestInfo | URL,
@@ -31,6 +32,9 @@ export default function SetupRoomPage() {
   const [saving, setSaving] = useState(false);
   const [inviter, setInviter] = useState<string>("");
   const [ready, setReady] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [rounds, setRounds] = useState(4);
+  const [savingRounds, setSavingRounds] = useState(false);
 
   const inviteLink = useMemo(() => {
     if (!code) return "";
@@ -48,6 +52,10 @@ export default function SetupRoomPage() {
     try {
       setInviter(localStorage.getItem("draft.nickname") ?? "");
     } catch {}
+    try {
+      const r = Number(localStorage.getItem("draft.rounds") ?? "");
+      if (Number.isFinite(r) && r >= 1 && r <= 10) setRounds(Math.floor(r));
+    } catch {}
 
     try {
       setShareNotSupported(!(typeof navigator !== "undefined" && "share" in navigator));
@@ -60,16 +68,28 @@ export default function SetupRoomPage() {
     if (!code) return;
     (async () => {
       setReady(false);
-      const res = await fetchJson<{ ok: true; room: { name: string | null } }>(`/api/rooms/info?code=${encodeURIComponent(code)}`);
+      const res = await fetchJson<{ ok: true; room: { name: string | null; rounds?: number } }>(
+        `/api/rooms/info?code=${encodeURIComponent(code)}`
+      );
       if (!res.ok) {
         setReady(true);
         return;
       }
       const n = (res.data as any)?.room?.name;
       if (typeof n === "string") setRoomName(n.trim());
+      const rr = (res.data as any)?.room?.rounds;
+      if (typeof rr === "number" && Number.isFinite(rr) && rr >= 1 && rr <= 10) setRounds(Math.floor(rr));
       setReady(true);
     })();
   }, [code]);
+
+  useEffect(() => {
+    (async () => {
+      const me = await fetchJson<{ ok: true; role: string }>("/api/rooms/me", { cache: "no-store" });
+      if (!me.ok) return;
+      setIsOwner(String((me.data as any)?.role ?? "") === "owner");
+    })();
+  }, []);
 
   useEffect(() => {
     if (!code) return;
@@ -149,7 +169,33 @@ export default function SetupRoomPage() {
     }
   }
 
+  async function saveRounds() {
+    setSavingRounds(true);
+    setError(null);
+    try {
+      const res = await fetchJson<{ ok: true; room: { code: string; rounds: number } }>("/api/rooms/rounds", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code, rounds })
+      });
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      try {
+        localStorage.setItem("draft.rounds", String(rounds));
+      } catch {}
+    } finally {
+      setSavingRounds(false);
+    }
+  }
+
   if (!ready) return <LoadingScreen title="Cargando configuración…" />;
+
+  const totalMinutes = rounds * 30;
+  const totalHours = Math.floor(totalMinutes / 60);
+  const restMinutes = totalMinutes % 60;
+  const totalLabel = totalHours > 0 ? `${totalHours}h ${restMinutes}m` : `${restMinutes}m`;
 
   return (
     <>
@@ -209,6 +255,56 @@ export default function SetupRoomPage() {
           </button>
         </div>
       </section>
+
+      {isOwner ? (
+        <section className="card">
+          <h2 style={{ margin: 0, fontSize: 18 }}>Duración</h2>
+          <p style={{ margin: "8px 0 0", color: "var(--muted)", lineHeight: 1.5 }}>
+            Cada ronda dura 30 minutos. Total: <strong style={{ color: "var(--text)" }}>{totalLabel}</strong>
+          </p>
+          <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+            <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+              <span className="pill">
+                <strong>Rondas</strong> {rounds}
+              </span>
+              <select
+                value={rounds}
+                onChange={(e) => setRounds(Number(e.target.value))}
+                disabled={savingRounds}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: 12,
+                  border: "1px solid var(--border)",
+                  background: "var(--field-bg)",
+                  color: "var(--text)",
+                  fontWeight: 900
+                }}
+              >
+                {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={saveRounds}
+              disabled={savingRounds}
+              style={{
+                padding: "12px 12px",
+                borderRadius: 12,
+                border: "1px solid var(--border)",
+                background: "var(--field-bg-strong)",
+                color: "var(--text)",
+                fontWeight: 900,
+                opacity: savingRounds ? 0.7 : 1
+              }}
+            >
+              {savingRounds ? "Guardando..." : "Guardar duración"}
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <section className="card">
         <h2 style={{ margin: 0, fontSize: 18 }}>Invitar</h2>
@@ -276,6 +372,8 @@ export default function SetupRoomPage() {
           )}
         </div>
       </section>
+
+      <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_SETUP ?? ""} className="card" />
     </>
   );
 }
