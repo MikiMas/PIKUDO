@@ -27,8 +27,11 @@ function pathFromPublicStorageUrl(url: string, bucket: string): string | null {
 }
 
 export async function POST(req: Request) {
+  const url = new URL(req.url);
   const token = (req.headers.get("x-cleanup-token") ?? "").trim();
-  if (!process.env.CLEANUP_TOKEN || token !== process.env.CLEANUP_TOKEN) {
+  const tokenQuery = (url.searchParams.get("token") ?? "").trim();
+  const expected = process.env.CLEANUP_TOKEN ?? "";
+  if (!expected || (token !== expected && tokenQuery !== expected)) {
     return NextResponse.json({ ok: false, error: "UNAUTHORIZED" }, { status: 401 });
   }
 
