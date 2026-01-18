@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "jsx": "react-native",
+    "lib": ["ES2019"],
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2019"
+  }
+}

@@ -2,16 +2,18 @@
   "name": "PIKUDO-api",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "cross-env NEXT_DISABLE_WEBPACK_CACHE=1 next dev",
-    "clean": "rimraf .next",
-    "dev:clean": "npm run clean && npm run dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "seed:challenges": "tsx scripts/seedChallenges.ts",
-    "seed": "npm run seed:challenges"
-  },
+  "type": "module",
+"scripts": {
+  "dev": "cross-env NEXT_DISABLE_WEBPACK_CACHE=1 npm exec -- next dev",
+  "clean": "rimraf .next",
+  "dev:clean": "npm run clean && npm run dev",
+  "build": "npm exec -- next build",
+  "start": "npm exec -- next start",
+  "lint": "npm exec -- next lint",
+  "seed:challenges": "tsx scripts/seedChallenges.ts",
+  "seed": "npm run seed:challenges"
+}
+,
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
     "bcryptjs": "^2.4.3",
@@ -31,6 +33,5 @@
     "rimraf": "^6.0.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
-  },
-  "type": "module"
+  }
 }
