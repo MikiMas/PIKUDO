@@ -12,7 +12,7 @@ type ChallengeRow = { id: string; title: string; description: string | null; med
 type ChallengesRes = { ok: true; challenges: ChallengeRow[] } | { ok: false; error: string };
 
 export function FinalChallengesScreen({ route }: { route: any }) {
-  const { apiBaseUrl } = route.params as { apiBaseUrl: string };
+  const { apiBaseUrl, roomCode } = route.params as { apiBaseUrl: string; roomCode: string };
   const navigation = useNavigation<any>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +78,7 @@ export function FinalChallengesScreen({ route }: { route: any }) {
                     onPress={() =>
                       navigation.navigate("PlayerMedia", {
                         apiBaseUrl,
+                        roomCode,
                         mode: "challenge",
                         challengeId: c.id,
                         title: c.title

@@ -9,6 +9,7 @@ type RoomRow = { id: string; status: string; starts_at: string; rounds: number |
 type RoomSettingsRow = { game_started_at: string | null };
 type MediaRow = { media_url: string | null; media_mime: string | null; media_type: string | null; player_id: string };
 type PlayerRow = { id: string; nickname: string };
+type RoomMemberRow = { player_id: string; nickname_at_join: string | null };
 
 const attemptsByDevice = new Map<string, number>();
 const MAX_ATTEMPTS = 2;
@@ -104,16 +105,24 @@ export async function POST(req: Request) {
 
   const { data: room } = await supabase.from("rooms").select("code").eq("id", roomId).maybeSingle<{ code: string }>();
 
+  const { data: members, error: membersError } = await supabase
+    .from("room_members")
+    .select("player_id,nickname_at_join")
+    .eq("room_id", roomId)
+    .limit(500)
+    .returns<RoomMemberRow[]>();
+
+  if (membersError) return NextResponse.json({ ok: false, error: membersError.message }, { status: 500 });
+  const playerIds = (members ?? []).map((m) => m.player_id);
+  if (playerIds.length === 0) return NextResponse.json({ ok: false, error: "NO_PLAYERS" }, { status: 404 });
+
   const { data: playersInRoom, error: playersError } = await supabase
     .from("players")
     .select("id,nickname")
-    .eq("room_id", roomId)
-    .limit(500)
+    .in("id", playerIds)
     .returns<PlayerRow[]>();
 
   if (playersError) return NextResponse.json({ ok: false, error: playersError.message }, { status: 500 });
-  const playerIds = (playersInRoom ?? []).map((p) => p.id);
-  if (playerIds.length === 0) return NextResponse.json({ ok: false, error: "NO_PLAYERS" }, { status: 404 });
 
   const { data: mediaRows, error: mediaError } =
     playerIds.length === 0
@@ -131,6 +140,9 @@ export async function POST(req: Request) {
   if (images.length === 0) return NextResponse.json({ ok: false, error: "NO_IMAGES" }, { status: 404 });
 
   const nickById = new Map((playersInRoom ?? []).map((p) => [p.id, p.nickname]));
+  for (const m of members ?? []) {
+    if (m.nickname_at_join) nickById.set(m.player_id, m.nickname_at_join);
+  }
 
   const MAX_FILES = 400;
   const MAX_TOTAL_BYTES = 50 * 1024 * 1024;
@@ -157,7 +169,7 @@ export async function POST(req: Request) {
 
   const zipBytes = createZipStore(files);
   const zipBase64 = Buffer.from(zipBytes).toString("base64");
-  const zipName = `canoo_${safeFileName(room?.code ?? "room")}_imagenes.zip`;
+  const zipName = `pikudo_${safeFileName(room?.code ?? "room")}_imagenes.zip`;
 
   const token = process.env.EMAIL_ZIP_WEBHOOK_TOKEN ?? "";
   const hookRes = await fetch(webhookUrl, {
@@ -168,8 +180,8 @@ export async function POST(req: Request) {
     },
     body: JSON.stringify({
       to: email,
-      subject: "CANOO - Im\u00e1genes de la partida",
-      text: "Adjunto tienes el ZIP con las im\u00e1genes de la partida.",
+      subject: "PIKUDO - Imágenes de la partida",
+      text: "Adjunto tienes el ZIP con las imágenes de la partida.",
       attachment: { filename: zipName, mime: "application/zip", contentBase64: zipBase64 }
     })
   });

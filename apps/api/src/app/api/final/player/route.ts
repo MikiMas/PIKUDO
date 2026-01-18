@@ -9,6 +9,7 @@ type RoomRow = { id: string; status: string; starts_at: string; rounds: number |
 type RoomSettingsRow = { game_started_at: string | null };
 
 type PlayerRow = { id: string; nickname: string; points: number; room_id: string };
+type RoomMemberRow = { player_id: string; nickname_at_join: string | null; points_at_leave: number | null };
 
 type CompletedRow = {
   id: string;
@@ -67,6 +68,16 @@ export async function GET(req: Request) {
   const ended = await isRoomEnded(supabase, roomId);
   if (!ended) return NextResponse.json({ ok: false, error: "GAME_NOT_ENDED" }, { status: 400 });
 
+  const { data: member, error: memberError } = await supabase
+    .from("room_members")
+    .select("player_id,nickname_at_join,points_at_leave")
+    .eq("room_id", roomId)
+    .eq("player_id", playerId!.trim())
+    .maybeSingle<RoomMemberRow>();
+
+  if (memberError) return NextResponse.json({ ok: false, error: memberError.message }, { status: 500 });
+  if (!member) return NextResponse.json({ ok: false, error: "NOT_ALLOWED" }, { status: 403 });
+
   const { data: player, error: playerError } = await supabase
     .from("players")
     .select("id,nickname,points,room_id")
@@ -75,7 +86,7 @@ export async function GET(req: Request) {
 
   if (playerError) return NextResponse.json({ ok: false, error: playerError.message }, { status: 500 });
   if (!player) return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
-  if (player.room_id !== roomId) return NextResponse.json({ ok: false, error: "NOT_ALLOWED" }, { status: 403 });
+  if (member.player_id !== player.id) return NextResponse.json({ ok: false, error: "NOT_ALLOWED" }, { status: 403 });
 
   const { data: rows, error: rowsError } = await supabase
     .from("player_challenges")
@@ -99,6 +110,8 @@ export async function GET(req: Request) {
       media: r.media_url ? { url: r.media_url, mime: r.media_mime ?? "", type: r.media_type ?? "" } : null
     }));
 
-  return NextResponse.json({ ok: true, player: { id: player.id, nickname: player.nickname, points: player.points }, completed });
-}
+  const nickname = member.nickname_at_join ?? player.nickname;
+  const points = member.points_at_leave ?? player.points ?? 0;
 
+  return NextResponse.json({ ok: true, player: { id: player.id, nickname, points }, completed });
+}

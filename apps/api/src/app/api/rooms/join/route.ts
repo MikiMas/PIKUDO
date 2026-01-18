@@ -54,7 +54,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: updateError.message }, { status: 500 });
   }
 
-  await supabase.from("room_members").upsert({ room_id: room.id, player_id: updated.id, role: "member" });
+  await supabase.from("room_members").upsert({
+    room_id: room.id,
+    player_id: updated.id,
+    role: "member",
+    left_at: null,
+    points_at_leave: null,
+    nickname_at_join: updated.nickname
+  });
   return NextResponse.json({ ok: true, room: { id: room.id, code: room.code }, player: updated });
 }
-

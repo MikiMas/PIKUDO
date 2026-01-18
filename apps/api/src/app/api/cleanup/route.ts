@@ -79,7 +79,7 @@ export async function POST(req: Request) {
   if (playerIds.length) {
     await supabase.from("player_challenges").delete().in("player_id", playerIds);
     await supabase.from("room_members").delete().in("room_id", roomIds);
-    await supabase.from("players").delete().in("id", playerIds);
+    await supabase.from("players").update({ room_id: null }).in("id", playerIds);
   } else {
     await supabase.from("room_members").delete().in("room_id", roomIds);
   }

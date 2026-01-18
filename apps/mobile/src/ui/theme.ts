@@ -15,6 +15,8 @@ export const theme = {
     buttonPrimaryBorder: "#0a6b3e",
     buttonSecondary: "#2f80ff",
     buttonSecondaryBorder: "#1c55b8",
+    buttonWarning: "#f59e0b",
+    buttonWarningBorder: "#b45309",
     buttonGhost: "rgba(255,255,255,0.10)",
     buttonGhostBorder: "rgba(255,255,255,0.18)"
   },

@@ -1,6 +1,6 @@
 ﻿import { useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { ActivityIndicator, Image, Modal, Pressable, View, Platform } from "react-native";
+import { ActivityIndicator, Alert, Image, Modal, Pressable, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { apiFetchJson, getDeviceId, getSessionToken } from "../lib/api";
 import { VideoPreview } from "../components/VideoPreview";
@@ -12,7 +12,9 @@ import type { Challenge, Leader, Player, RoomState } from "./roomTypes";
 
 export function GameScreen({
   apiBaseUrl,
+  roomCode,
   state,
+  isOwner,
   loading,
   error,
   nextBlockInSec,
@@ -28,10 +30,13 @@ export function GameScreen({
   setChallenges,
   setNextBlockInSec,
   setState,
-  setLeaders
+  setLeaders,
+  onExitHome
 }: {
   apiBaseUrl: string;
+  roomCode: string;
   state: RoomState;
+  isOwner: boolean;
   loading: boolean;
   error: string | null;
   nextBlockInSec: number;
@@ -48,6 +53,7 @@ export function GameScreen({
   setNextBlockInSec: Dispatch<SetStateAction<number>>;
   setState: Dispatch<SetStateAction<RoomState>>;
   setLeaders: Dispatch<SetStateAction<Leader[]>>;
+  onExitHome: () => Promise<void>;
 }) {
   const completedCount = useMemo(() => challenges.filter((c) => c.completed).length, [challenges]);
   const nextMinutes = Math.max(1, Math.ceil(nextBlockInSec / 60));
@@ -84,9 +90,10 @@ export function GameScreen({
 
   const [previewMedia, setPreviewMedia] = useState<{ url: string; type: "image" | "video" } | null>(null);
 
-  const [cameraPickId, setCameraPickId] = useState<string | null>(null);
-
   const [uploadProgress, setUploadProgress] = useState<{ id: string; pct: number } | null>(null);
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const [adminLoading, setAdminLoading] = useState(false);
 
   const mediaTypes = (kind: "all" | "image" | "video") => {
     const ip: any = ImagePicker as any;
@@ -133,7 +140,7 @@ export function GameScreen({
     });
   };
 
-  const handlePickMedia = async (challengeId: string, source: "camera" | "gallery", media: "all" | "image" | "video" = "all") => {
+  const handlePickMedia = async (challengeId: string, source: "camera" | "gallery", media: "all" | "image" | "video" = "image") => {
     setUploadErrorById((m) => ({ ...m, [challengeId]: null }));
     if (source === "camera") {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
@@ -254,8 +261,77 @@ export function GameScreen({
     }
   };
 
+  const handleAdminAction = async (action: "transfer" | "leave") => {
+    if (adminLoading) return;
+    setAdminError(null);
+    setAdminLoading(true);
+    try {
+      if (action === "transfer") {
+        const res = await apiFetchJson<any>(apiBaseUrl, "/api/rooms/leave-transfer", { method: "POST" });
+        if (!res.ok) throw new Error(res.error);
+        if ((res.data as any)?.ok === false) throw new Error((res.data as any)?.error ?? "REQUEST_FAILED");
+      } else {
+        const res = await apiFetchJson<any>(apiBaseUrl, "/api/rooms/leave", { method: "POST" });
+        if (!res.ok) throw new Error(res.error);
+        if ((res.data as any)?.ok === false) throw new Error((res.data as any)?.error ?? "REQUEST_FAILED");
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "REQUEST_FAILED";
+      setAdminError(msg);
+    } finally {
+      setAdminLoading(false);
+      setAdminOpen(false);
+      await onExitHome();
+    }
+  };
+
+  const handleAdminEnd = async () => {
+    if (adminLoading) return;
+    setAdminError(null);
+    setAdminLoading(true);
+    try {
+      const res = await apiFetchJson<any>(apiBaseUrl, "/api/rooms/end", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code: roomCode })
+      });
+      if (!res.ok) throw new Error(res.error);
+      if ((res.data as any)?.ok === false) throw new Error((res.data as any)?.error ?? "REQUEST_FAILED");
+      setAdminOpen(false);
+      setState("ended");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "REQUEST_FAILED";
+      setAdminError(msg);
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
   return (
-    <View style={{ gap: 10 }}>
+    <View style={{ gap: 10, position: "relative", paddingTop: 36 }}>
+      <Pressable
+        onPress={() => {
+          setAdminError(null);
+          setAdminOpen(true);
+        }}
+        style={{
+          position: "absolute",
+          right: 6,
+          top: 0,
+          zIndex: 20,
+          width: 34,
+          height: 34,
+          borderRadius: 17,
+          backgroundColor: theme.colors.danger,
+          alignItems: "center",
+          justifyContent: "center",
+          borderWidth: 1,
+          borderColor: theme.colors.danger,
+          elevation: 6
+        }}
+      >
+        <Muted style={{ color: theme.colors.textOnPrimary, fontWeight: "900", fontSize: 16 }}>X</Muted>
+      </Pressable>
       <Card style={{ marginBottom: 2 }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <View>
@@ -388,8 +464,7 @@ export function GameScreen({
                           fullWidth
                           disabled={Boolean(uploadingById[c.id])}
                           onPress={() => {
-                            if (Platform.OS === "android") setCameraPickId(c.id);
-                            else handlePickMedia(c.id, "camera");
+                            handlePickMedia(c.id, "camera", "image");
                           }}
                         >
                           <Image
@@ -406,7 +481,7 @@ export function GameScreen({
                           fullWidth
                           disabled={Boolean(uploadingById[c.id])}
                           onPress={async () => {
-                            await handlePickMedia(c.id, "gallery");
+                            await handlePickMedia(c.id, "gallery", "image");
                           }}
                         >
                           <Image
@@ -503,6 +578,122 @@ export function GameScreen({
           </View>
         )}
       </Card>
+      <Modal transparent visible={adminOpen} animationType="fade" onRequestClose={() => setAdminOpen(false)}>
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", padding: 16, justifyContent: "center" }}
+          onPress={() => {
+            if (!adminLoading) setAdminOpen(false);
+          }}
+        >
+          <Pressable onPress={() => {}}>
+            <Card>
+              <Muted style={{ color: theme.colors.text, fontWeight: "900" }}>
+                Opciones de la sala
+              </Muted>
+              <Muted style={{ marginTop: 6 }}>
+                {isOwner
+                  ? "Puedes finalizar la partida o salir de la partida."
+                  : "Puedes salir de la partida. El resto seguira jugando."}
+              </Muted>
+              {adminError ? (
+                <Muted style={{ marginTop: 10, color: theme.colors.danger }}>
+                  {adminError}
+                </Muted>
+              ) : null}
+              <View style={{ marginTop: 12, gap: 10 }}>
+                {isOwner ? (
+                  <>
+                    {state !== "ended" ? (
+                      <Button
+                        variant="secondary"
+                        disabled={adminLoading}
+                        onPress={() => {
+                          Alert.alert(
+                            "Finalizar partida?",
+                            "Se marcara la partida como finalizada y se ira a la sala final.",
+                            [
+                              { text: "Cancelar", style: "cancel" },
+                              {
+                                text: adminLoading ? "Finalizando..." : "Finalizar partida",
+                                style: "default",
+                                onPress: async () => {
+                                  await handleAdminEnd();
+                                }
+                              }
+                            ],
+                            { cancelable: true }
+                          );
+                        }}
+                      >
+                        {adminLoading ? "Finalizando..." : "Finalizar partida"}
+                      </Button>
+                    ) : null}
+                    {leaders.length > 1 ? (
+                      <Button
+                        variant="danger"
+                        disabled={adminLoading}
+                        onPress={() => {
+                          Alert.alert(
+                            "Salir de la partida?",
+                            "El liderazgo se asignara a otro jugador y saldras de la partida.",
+                            [
+                              { text: "Cancelar", style: "cancel" },
+                              {
+                                text: adminLoading ? "Saliendo..." : "Salir",
+                                style: "default",
+                                onPress: async () => {
+                                  await handleAdminAction("transfer");
+                                }
+                              }
+                            ],
+                            { cancelable: true }
+                          );
+                        }}
+                      >
+                        {adminLoading ? "Saliendo..." : "Salir de la partida"}
+                      </Button>
+                    ) : null}
+                  </>
+                ) : (
+                  <Button
+                    variant="danger"
+                    disabled={adminLoading}
+                    onPress={() => {
+                      Alert.alert(
+                        "Salir de la partida?",
+                        "Saldras de la sala, pero tus fotos y puntos se mantendran para el final.",
+                        [
+                          { text: "Cancelar", style: "cancel" },
+                          {
+                            text: adminLoading ? "Saliendo..." : "Salir",
+                            style: "destructive",
+                            onPress: async () => {
+                              await handleAdminAction("leave");
+                            }
+                          }
+                        ],
+                        { cancelable: true }
+                      );
+                    }}
+                  >
+                    {adminLoading ? "Saliendo..." : "Salir de la partida"}
+                  </Button>
+                )}
+                <Button
+                  variant="primary"
+                  disabled={adminLoading}
+                  onPress={() => {
+                    setAdminOpen(false);
+                  }}
+                >
+                  Volver
+                </Button>
+              </View>
+            </Card>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <Modal transparent visible={Boolean(confirmDeleteId)} animationType="fade" onRequestClose={() => setConfirmDeleteId(null)}>
         <Pressable
           style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", padding: 18, justifyContent: "center" }}
@@ -569,59 +760,6 @@ export function GameScreen({
                 />
               )
             ) : null}
-          </Pressable>
-        </Pressable>
-      </Modal>
-      <Modal transparent visible={Platform.OS === "android" && Boolean(cameraPickId)} animationType="fade" onRequestClose={() => setCameraPickId(null)}>
-        <Pressable
-          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", padding: 18, justifyContent: "center" }}
-          onPress={() => setCameraPickId(null)}
-        >
-          <Pressable
-            style={{ borderRadius: 16, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: "rgba(26,28,58,0.95)", padding: 14 }}
-            onPress={() => {}}
-          >
-            <H2>Camara</H2>
-            <Muted style={{ marginTop: 6 }}>Elige el tipo de captura</Muted>
-            <View style={{ height: 12 }} />
-            <View style={{ flexDirection: "row", gap: 12, justifyContent: "center" }}>
-              <View style={{ width: 64 }}>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  fullWidth
-                  onPress={async () => {
-                    const id = cameraPickId;
-                    setCameraPickId(null);
-                    if (id) await handlePickMedia(id, "camera", "image");
-                  }}
-                >
-                  <Image
-                    source={require("../../assets/camara.png")}
-                    style={{ width: 22, height: 22, tintColor: theme.colors.textOnPrimary }}
-                    resizeMode="contain"
-                  />
-                </Button>
-              </View>
-              <View style={{ width: 64 }}>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  fullWidth
-                  onPress={async () => {
-                    const id = cameraPickId;
-                    setCameraPickId(null);
-                    if (id) await handlePickMedia(id, "camera", "video");
-                  }}
-                >
-                  <Image
-                    source={require("../../assets/camara-de-video.png")}
-                    style={{ width: 22, height: 22, tintColor: theme.colors.textOnPrimary }}
-                    resizeMode="contain"
-                  />
-                </Button>
-              </View>
-            </View>
           </Pressable>
         </Pressable>
       </Modal>

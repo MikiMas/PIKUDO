@@ -113,7 +113,7 @@ export function FinalScreen({
             <View style={{ flex: 1 }}>
               <Button
                 variant="secondary"
-                onPress={() => navigation.navigate("FinalPlayers", { apiBaseUrl })}
+                onPress={() => navigation.navigate("FinalPlayers", { apiBaseUrl, roomCode })}
               >
                 Por jugador
               </Button>
@@ -121,7 +121,7 @@ export function FinalScreen({
             <View style={{ flex: 1 }}>
               <Button
                 variant="secondary"
-                onPress={() => navigation.navigate("FinalChallenges", { apiBaseUrl })}
+                onPress={() => navigation.navigate("FinalChallenges", { apiBaseUrl, roomCode })}
               >
                 Por retos
               </Button>

@@ -3,6 +3,7 @@ import { Image, Pressable, ScrollView, StatusBar, View } from "react-native";
 import * as FileSystem from "expo-file-system";
 import * as MediaLibrary from "expo-media-library";
 import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { apiFetchJson } from "../lib/api";
 import { VideoPreview } from "../components/VideoPreview";
 import { Button } from "../ui/Button";
@@ -42,16 +43,46 @@ const getExtension = (mime: string, url: string) => {
 
 export function PlayerMediaScreen({ route }: { route: any }) {
   const params = route.params as
-    | { apiBaseUrl: string; mode: "player"; playerId: string; nickname: string }
-    | { apiBaseUrl: string; mode: "challenge"; challengeId: string; title: string };
+    | { apiBaseUrl: string; roomCode: string; mode: "player"; playerId: string; nickname: string }
+    | { apiBaseUrl: string; roomCode: string; mode: "challenge"; challengeId: string; title: string };
   const { apiBaseUrl } = params;
+  const roomCode = params.roomCode;
   const navigation = useNavigation<any>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<MediaItem[]>([]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [savedById, setSavedById] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
   const [savedCount, setSavedCount] = useState<number | null>(null);
+
+  const scopeId = params.mode === "player" ? params.playerId : params.challengeId;
+  const savedKey = useMemo(() => {
+    const base = apiBaseUrl.replace(/\/+$/, "");
+    return `saved_media:${base}:${roomCode}:${params.mode}:${scopeId}`;
+  }, [apiBaseUrl, params.mode, roomCode, scopeId]);
+
+  useEffect(() => {
+    let canceled = false;
+    const loadSaved = async () => {
+      const raw = await AsyncStorage.getItem(savedKey).catch(() => null);
+      if (canceled) return;
+      if (!raw) {
+        setSavedById({});
+        return;
+      }
+      try {
+        const parsed = JSON.parse(raw) as Record<string, boolean>;
+        setSavedById(parsed && typeof parsed === "object" ? parsed : {});
+      } catch {
+        setSavedById({});
+      }
+    };
+    loadSaved().catch(() => {});
+    return () => {
+      canceled = true;
+    };
+  }, [savedKey]);
 
   useEffect(() => {
     let canceled = false;
@@ -109,6 +140,7 @@ export function PlayerMediaScreen({ route }: { route: any }) {
   const selectedIds = useMemo(() => Object.keys(selected).filter((id) => selected[id]), [selected]);
 
   const toggle = (id: string) => {
+    if (savedById[id]) return;
     setSelected((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
@@ -124,18 +156,26 @@ export function PlayerMediaScreen({ route }: { route: any }) {
         return;
       }
       let saved = 0;
+      const nextSaved = { ...savedById };
+      const nextSelected = { ...selected };
       for (const id of selectedIds) {
         const item = items.find((c) => c.id === id);
         if (!item?.media?.url) continue;
         const ext = getExtension(item.media.mime ?? "", item.media.url);
-        const localPath = `${FileSystem.cacheDirectory}canoo-${id}${ext}`;
-        const downloaded = await FileSystem.downloadAsync(item.media.url, localPath);
+        const targetFile = new FileSystem.File(FileSystem.Paths.cache, `canoo-${id}${ext}`);
+        const downloaded = await FileSystem.File.downloadFileAsync(item.media.url, targetFile);
         await MediaLibrary.saveToLibraryAsync(downloaded.uri);
         saved += 1;
+        nextSaved[id] = true;
+        nextSelected[id] = false;
       }
       setSavedCount(saved);
+      setSavedById(nextSaved);
+      setSelected(nextSelected);
+      await AsyncStorage.setItem(savedKey, JSON.stringify(nextSaved)).catch(() => {});
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "SAVE_FAILED";
+      const raw = e instanceof Error ? e.message : "SAVE_FAILED";
+      const msg = raw.toLowerCase().includes("destination already exists") ? "Foto ya descargada." : raw;
       setError(msg);
     } finally {
       setSaving(false);
@@ -178,25 +218,29 @@ export function PlayerMediaScreen({ route }: { route: any }) {
           ) : items.length === 0 ? (
             <Muted>No hay media para mostrar.</Muted>
           ) : (
-            <View style={{ gap: 12 }}>
+              <View style={{ gap: 12 }}>
                 {items.map((c) => {
                   const active = !!selected[c.id];
+                  const savedAlready = !!savedById[c.id];
                   return (
                     <Card
-                        style={{
-                          backgroundColor: theme.colors.cardAlt,
-                          borderColor: active ? theme.colors.success : theme.colors.border
-                        }}
-                      >
-                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                          <View style={{ flex: 1 }}>
-                            <Label>{c.title}</Label>
-                            {params.mode === "challenge" && c.owner?.nickname ? (
-                              <Muted style={{ marginTop: 4 }}>Subido por {c.owner.nickname}</Muted>
-                            ) : null}
-                            {c.description ? <Muted style={{ marginTop: 4 }}>{c.description}</Muted> : null}
-                          </View>
+                      key={c.id}
+                      style={{
+                        backgroundColor: theme.colors.cardAlt,
+                        borderColor: active ? theme.colors.success : savedAlready ? theme.colors.border : theme.colors.border
+                      }}
+                    >
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                        <View style={{ flex: 1 }}>
+                          <Label>{c.title}</Label>
+                          {params.mode === "challenge" && c.owner?.nickname ? (
+                            <Muted style={{ marginTop: 4 }}>Subido por {c.owner.nickname}</Muted>
+                          ) : null}
+                          {c.description ? <Muted style={{ marginTop: 4 }}>{c.description}</Muted> : null}
+                        </View>
+                        <View style={{ alignItems: "center", gap: 6 }}>
                           <Pressable
+                            disabled={savedAlready}
                             onPress={() => toggle(c.id)}
                             style={{
                               minWidth: 30,
@@ -205,9 +249,14 @@ export function PlayerMediaScreen({ route }: { route: any }) {
                               borderRadius: 999,
                               alignItems: "center",
                               justifyContent: "center",
-                              backgroundColor: active ? theme.colors.success : "rgba(0,0,0,0.35)",
+                              backgroundColor: active
+                                ? theme.colors.success
+                                : savedAlready
+                                  ? "rgba(0,0,0,0.18)"
+                                  : "rgba(0,0,0,0.35)",
                               borderWidth: 1,
-                              borderColor: active ? theme.colors.success : "rgba(0,0,0,0.45)"
+                              borderColor: active ? theme.colors.success : "rgba(0,0,0,0.45)",
+                              opacity: savedAlready ? 0.6 : 1
                             }}
                           >
                             <Image
@@ -216,35 +265,37 @@ export function PlayerMediaScreen({ route }: { route: any }) {
                                 width: 18,
                                 height: 18,
                                 tintColor: theme.colors.text,
-                                opacity: active ? 1 : 0.35
+                                opacity: active ? 1 : savedAlready ? 0.2 : 0.35
                               }}
                               resizeMode="contain"
                             />
                           </Pressable>
+                          {savedAlready ? <Muted>Ya guardada</Muted> : null}
                         </View>
-                        {c.media?.url ? (
-                          <View style={{ marginTop: 10 }}>
-                            <Pressable onPress={() => toggle(c.id)}>
-                              {c.media.type === "video" ? (
-                                <VideoPreview url={c.media.url} />
-                              ) : (
-                                <Image
-                                  source={{ uri: c.media.url }}
-                                  style={{
-                                    width: "100%",
-                                    height: 220,
-                                    borderRadius: 12,
-                                    borderWidth: 1,
-                                    borderColor: theme.colors.border,
-                                    backgroundColor: "rgba(0,0,0,0.25)"
-                                  }}
-                                  resizeMode="contain"
-                                />
-                              )}
-                            </Pressable>
-                          </View>
-                        ) : null}
-                      </Card>
+                      </View>
+                      {c.media?.url ? (
+                        <View style={{ marginTop: 10 }}>
+                          <Pressable disabled={savedAlready} onPress={() => toggle(c.id)}>
+                            {c.media.type === "video" ? (
+                              <VideoPreview url={c.media.url} />
+                            ) : (
+                              <Image
+                                source={{ uri: c.media.url }}
+                                style={{
+                                  width: "100%",
+                                  height: 220,
+                                  borderRadius: 12,
+                                  borderWidth: 1,
+                                  borderColor: theme.colors.border,
+                                  backgroundColor: "rgba(0,0,0,0.25)"
+                                }}
+                                resizeMode="contain"
+                              />
+                            )}
+                          </Pressable>
+                        </View>
+                      ) : null}
+                    </Card>
                   );
                 })}
               </View>

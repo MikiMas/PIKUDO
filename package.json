@@ -1,5 +1,5 @@
 {
-  "name": "canoo-monorepo",
+  "name": "PIKUDO",
   "private": true,
   "workspaces": [
     "apps/*"
@@ -17,9 +17,5 @@
     "mobile:android": "npm --prefix apps/mobile run android",
     "mobile:ios": "npm --prefix apps/mobile run ios",
     "mobile:web": "npm --prefix apps/mobile run web"
-  },
-  "dependencies": {
-    "expo-media-library": "~18.2.1",
-    "expo-screen-orientation": "~9.0.8"
   }
 }

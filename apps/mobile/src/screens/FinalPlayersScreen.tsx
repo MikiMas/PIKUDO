@@ -12,7 +12,7 @@ type PlayerRow = { id: string; nickname: string; points: number; completedCount:
 type PlayersRes = { ok: true; players: PlayerRow[] } | { ok: false; error: string };
 
 export function FinalPlayersScreen({ route }: { route: any }) {
-  const { apiBaseUrl } = route.params as { apiBaseUrl: string };
+  const { apiBaseUrl, roomCode } = route.params as { apiBaseUrl: string; roomCode: string };
   const navigation = useNavigation<any>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +78,7 @@ export function FinalPlayersScreen({ route }: { route: any }) {
                     onPress={() =>
                       navigation.navigate("PlayerMedia", {
                         apiBaseUrl,
+                        roomCode,
                         mode: "player",
                         playerId: p.id,
                         nickname: p.nickname

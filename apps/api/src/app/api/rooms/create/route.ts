@@ -183,7 +183,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: updateError.message }, { status: 500 });
   }
 
-  await supabase.from("room_members").upsert({ room_id: room.id, player_id: updated.id, role: "owner" });
+  await supabase.from("room_members").upsert({
+    room_id: room.id,
+    player_id: updated.id,
+    role: "owner",
+    left_at: null,
+    points_at_leave: null,
+    nickname_at_join: updated.nickname
+  });
   await supabase.from("rooms").update({ created_by_player_id: updated.id }).eq("id", room.id);
 
   return NextResponse.json({
@@ -192,4 +199,3 @@ export async function POST(req: Request) {
     player: updated
   });
 }
-

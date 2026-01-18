@@ -15,11 +15,17 @@ function extFromMime(mime: string): string {
   return "";
 }
 
+function buildStoragePath(roomId: string, playerId: string, blockStartIso: string, pcId: string, mime: string): string {
+  return `${roomId}/${playerId}/${blockStartIso}/${pcId}${extFromMime(mime)}`;
+}
+
 export async function POST(req: Request) {
   let playerId = "";
+  let roomId = "";
   try {
     const authed = await requirePlayerFromDevice(req);
     playerId = authed.player.id;
+    roomId = authed.player.room_id ?? "";
   } catch (err) {
     const msg = err instanceof Error ? err.message : "UNAUTHORIZED";
     const status = msg === "UNAUTHORIZED" ? 401 : 500;
@@ -49,9 +55,10 @@ export async function POST(req: Request) {
   if (!pc || pc.player_id !== playerId) {
     return NextResponse.json({ ok: false, error: "NOT_ALLOWED" }, { status: 403 });
   }
+  if (!roomId) return NextResponse.json({ ok: false, error: "NO_ROOM" }, { status: 400 });
 
   const blockStartIso = new Date(pc.block_start).toISOString();
-  const path = `${playerId}/${blockStartIso}/${pc.id}${extFromMime(mime)}`;
+  const path = buildStoragePath(roomId, playerId, blockStartIso, pc.id, mime);
 
   const { data, error } = await supabase.storage.from(BUCKET).createSignedUploadUrl(path, { upsert: true });
   if (error) {
@@ -70,4 +77,3 @@ export async function POST(req: Request) {
     }
   });
 }
-

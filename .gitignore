@@ -1,9 +1,6 @@
 .next
 node_modules
 .env.local
-apps/web/.next
-apps/web/node_modules
 apps/mobile/node_modules
 apps/mobile/.expo
 apps/mobile/web-build
-

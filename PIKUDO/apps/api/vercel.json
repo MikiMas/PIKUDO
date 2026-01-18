@@ -1,8 +1,0 @@
-{
-  "crons": [
-    {
-      "path": "/api/cleanup?token=0a543971-711b-42cb-9c00-8317ff6fec12",
-      "schedule": "0 4 * * *"
-    }
-  ]
-}

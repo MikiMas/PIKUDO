@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const SESSION_KEY = "canoo:st";
-const DEVICE_KEY = "canoo:deviceId";
+const SESSION_KEY = "pikudo:st";
+const DEVICE_KEY = "pikudo:deviceId";
 
 function createDeviceId(): string {
   const rand = Math.random().toString(36).slice(2, 10);

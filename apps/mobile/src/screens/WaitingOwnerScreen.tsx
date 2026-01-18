@@ -12,6 +12,7 @@ export function WaitingOwnerScreen({
   players,
   onDecRounds,
   onIncRounds,
+  onInvite,
   onStart,
   onRequestClose
 }: {
@@ -20,6 +21,7 @@ export function WaitingOwnerScreen({
   players: Player[];
   onDecRounds: () => void;
   onIncRounds: () => void;
+  onInvite: () => Promise<void>;
   onStart: () => void | Promise<void>;
   onRequestClose: () => void;
 }) {

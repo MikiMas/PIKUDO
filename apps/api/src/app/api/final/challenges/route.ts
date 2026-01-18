@@ -57,12 +57,12 @@ export async function GET(req: Request) {
   if (!ended) return NextResponse.json({ ok: false, error: "GAME_NOT_ENDED" }, { status: 400 });
 
   const { data: players, error: playersError } = await supabase
-    .from("players")
-    .select("id")
+    .from("room_members")
+    .select("player_id")
     .eq("room_id", roomId)
-    .limit(200);
+    .limit(500);
   if (playersError) return NextResponse.json({ ok: false, error: playersError.message }, { status: 500 });
-  const ids = (players ?? []).map((p: any) => String(p.id));
+  const ids = (players ?? []).map((p: any) => String(p.player_id));
   if (ids.length === 0) return NextResponse.json({ ok: true, challenges: [] });
 
   const { data: rows, error: rowsError } = await supabase

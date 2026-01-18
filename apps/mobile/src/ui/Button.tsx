@@ -13,13 +13,15 @@ export function Button({
   children: ReactNode;
   onPress: () => void | Promise<void>;
   disabled?: boolean;
-  variant?: "primary" | "secondary" | "ghost" | "danger";
+  variant?: "primary" | "secondary" | "ghost" | "danger" | "warning";
   fullWidth?: boolean;
   size?: "sm" | "md" | "lg";
 }) {
   const bg =
     variant === "danger"
       ? "#e53935"
+      : variant === "warning"
+        ? theme.colors.buttonWarning
       : variant === "secondary"
         ? theme.colors.buttonSecondary
       : variant === "ghost"
@@ -28,12 +30,15 @@ export function Button({
   const border =
     variant === "danger"
       ? "#b71c1c"
+      : variant === "warning"
+        ? theme.colors.buttonWarningBorder
       : variant === "secondary"
         ? theme.colors.buttonSecondaryBorder
       : variant === "ghost"
         ? theme.colors.buttonGhostBorder
         : theme.colors.buttonPrimaryBorder;
-  const textColor = variant === "primary" ? theme.colors.textOnPrimary : variant === "danger" ? "#fff" : theme.colors.text;
+  const textColor =
+    variant === "primary" ? theme.colors.textOnPrimary : variant === "danger" ? "#fff" : variant === "warning" ? "#fff" : theme.colors.text;
   const paddingVertical = size === "lg" ? 18 : size === "sm" ? 8 : 13;
   const paddingHorizontal = size === "lg" ? 18 : size === "sm" ? 10 : 14;
   const fontSize = size === "lg" ? 18 : size === "sm" ? 16 : 15;

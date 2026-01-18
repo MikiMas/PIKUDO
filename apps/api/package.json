@@ -1,5 +1,5 @@
 {
-  "name": "canoo-api",
+  "name": "PIKUDO-api",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -13,17 +13,18 @@
     "seed": "npm run seed:challenges"
   },
   "dependencies": {
-    "bcryptjs": "^2.4.3",
     "@supabase/supabase-js": "^2.49.1",
+    "bcryptjs": "^2.4.3",
+    "PIKUDO-monorepo": "file:../..",
     "next": "15.4.10",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
-    "@types/bcryptjs": "^2.4.6",
     "cross-env": "^7.0.3",
     "eslint": "^9.17.0",
     "eslint-config-next": "15.4.10",

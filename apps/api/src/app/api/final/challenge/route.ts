@@ -17,6 +17,7 @@ type MediaRow = {
   completed_at: string | null;
   players: { id: string; nickname: string } | null;
 };
+type RoomMemberRow = { player_id: string; nickname_at_join: string | null };
 
 async function isRoomEnded(supabase: ReturnType<typeof supabaseAdmin>, roomId: string): Promise<boolean> {
   const now = new Date();
@@ -65,13 +66,14 @@ export async function GET(req: Request) {
   const ended = await isRoomEnded(supabase, roomId);
   if (!ended) return NextResponse.json({ ok: false, error: "GAME_NOT_ENDED" }, { status: 400 });
 
-  const { data: players, error: playersError } = await supabase
-    .from("players")
-    .select("id")
+  const { data: members, error: membersError } = await supabase
+    .from("room_members")
+    .select("player_id,nickname_at_join")
     .eq("room_id", roomId)
-    .limit(200);
-  if (playersError) return NextResponse.json({ ok: false, error: playersError.message }, { status: 500 });
-  const ids = (players ?? []).map((p: any) => String(p.id));
+    .limit(500)
+    .returns<RoomMemberRow[]>();
+  if (membersError) return NextResponse.json({ ok: false, error: membersError.message }, { status: 500 });
+  const ids = (members ?? []).map((m) => String(m.player_id));
   if (ids.length === 0) return NextResponse.json({ ok: true, challenge: null, media: [] });
 
   const { data: challenge, error: challengeError } = await supabase
@@ -93,12 +95,18 @@ export async function GET(req: Request) {
     .returns<MediaRow[]>();
   if (rowsError) return NextResponse.json({ ok: false, error: rowsError.message }, { status: 500 });
 
-  const media = (rows ?? []).map((r) => ({
-    id: r.id,
-    completedAt: r.completed_at,
-    player: r.players ? { id: r.players.id, nickname: r.players.nickname } : null,
-    media: r.media_url ? { url: r.media_url, mime: r.media_mime ?? "", type: r.media_type ?? "" } : null
-  }));
+  const nicknameById = new Map((members ?? []).map((m) => [m.player_id, m.nickname_at_join]));
+
+  const media = (rows ?? []).map((r) => {
+    const fallbackNick = r.players?.nickname ?? null;
+    const nickname = nicknameById.get(r.players?.id ?? "") ?? fallbackNick;
+    return {
+      id: r.id,
+      completedAt: r.completed_at,
+      player: r.players ? { id: r.players.id, nickname: nickname ?? "" } : null,
+      media: r.media_url ? { url: r.media_url, mime: r.media_mime ?? "", type: r.media_type ?? "" } : null
+    };
+  });
 
   return NextResponse.json({ ok: true, challenge: { id: challenge.id, title: challenge.title, description: challenge.description }, media });
 }
