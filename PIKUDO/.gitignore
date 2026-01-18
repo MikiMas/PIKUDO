@@ -1,0 +1,6 @@
+.next
+node_modules
+.env.local
+apps/mobile/node_modules
+apps/mobile/.expo
+apps/mobile/web-build
